@@ -18,6 +18,9 @@ class PricePredictor(QMainWindow, Ui_PricePredictor):
         )
 
     def setup(self):
+        self.model = xgb.Booster()
+        
+        self.model.load_model("./Machine Learning/model.xgb")
         self.setupUi(self)
         double_validator = QDoubleValidator()
 
@@ -26,39 +29,39 @@ class PricePredictor(QMainWindow, Ui_PricePredictor):
         self.power_line_edit.setValidator(double_validator)
         self.engine_size_line_edit.setValidator(double_validator)
 
-        with open("../Values/brand_models.json", "r") as f:
+        with open("./Values/brand_models.json", "r") as f:
             brand_models = json.load(f)
             for brand in brand_models.keys():
                 self.brand_combo_box.addItem(brand)
 
-        with open("../Values/location.json", "r") as f:
+        with open("./Values/location.json", "r") as f:
             locations = json.load(f)
             for location in locations:
                 self.location_combo_box.addItem(location)
 
-        with open("../Values/body_type.json", "r") as f:
+        with open("./Values/body_type.json", "r") as f:
             body_types = json.load(f)
             for body_type in body_types:
                 self.body_type_combo_box.addItem(body_type)
 
-        with open("../Values/fuel.json", "r") as f:
+        with open("./Values/fuel.json", "r") as f:
             fuels = json.load(f)
             for fuel in fuels:
                 self.fuel_combo_box.addItem(fuel)
 
-        with open("../Values/transmission.json", "r") as f:
+        with open("./Values/transmission.json", "r") as f:
             transmissions = json.load(f)
             for transmission in transmissions:
                 self.transmission_combo_box.addItem(transmission)
 
-        with open("../Values/color.json", "r") as f:
+        with open("./Values/color.json", "r") as f:
             colors = json.load(f)
             for color in colors:
                 self.color_combo_box.addItem(color)
 
     def handle_combo_box_activated(self):
         brand = self.brand_combo_box.currentText()
-        with open("../Values/brand_models.json", "r") as f:
+        with open("./Values/brand_models.json", "r") as f:
             brand_models = json.load(f)
             models = brand_models[brand]
             self.model_combo_box.clear()
@@ -70,12 +73,10 @@ class PricePredictor(QMainWindow, Ui_PricePredictor):
 
         test = xgb.DMatrix(new_data)
 
-        model = xgb.Booster()
-
-        model.load_model("../Machine Learning/model.xgb")
+        
         
 
-        prediction = model.predict(test)[0]
+        prediction = self.model.predict(test)[0]
 
         rounded_prediction = round(prediction / 100) * 100
 
@@ -109,7 +110,11 @@ class PricePredictor(QMainWindow, Ui_PricePredictor):
         }
 
         df = pd.DataFrame(data, index=[0])
+        cat=['brand', 'model', 'location', 'body_type', 'fuel', 'transmission', 'color']
+        OH_encoder = OneHotEncoder(handle_unknown="ignore", sparse=False)
+        OH_X = pd.DataFrame(OH_encoder.fit_transform(df))
+        OH_X.index = df.index
+        df = df.drop(cat, axis=1)
 
-        new_data = pd.get_dummies(df)
-        
+        new_data=pd.concat([OH_X,df],axis=1)
         return new_data
