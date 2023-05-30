@@ -17,6 +17,7 @@ class PricePredictor(QMainWindow, Ui_PricePredictor):
         self.estimate_price_button.clicked.connect(
             self.handle_estimate_price_button_clicked
         )
+        self.estimated_price_view.setDigitCount(7)
 
     def setup(self):
         self.model = xgb.Booster()
